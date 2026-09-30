@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="2026 디지털혁신 백서 장별 검색 페이지">
+  <title>2026 디지털혁신 백서</title>
+  <style>
+    :root { color-scheme: light; --ink:#172b3a; --muted:#587080; --line:#d8e2e9; --blue:#145b83; --paper:#fff; --bg:#f3f7f9; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    header { background:#103b56; color:white; padding:48px max(24px,calc((100% - 1080px)/2)); }
+    header p { margin:0 0 8px; color:#c9e2f2; font-size:.9rem; }
+    h1 { margin:0; font-size:clamp(1.8rem,4vw,2.7rem); line-height:1.2; }
+    header .intro { max-width:650px; margin:14px 0 0; color:#e1edf4; }
+    main { max-width:1080px; margin:32px auto 64px; padding:0 20px; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:18px; }
+    label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+    input { flex:1 1 280px; min-width:0; border:1px solid #aebfca; border-radius:8px; padding:12px 14px; font:inherit; background:white; }
+    input:focus { outline:3px solid #9bd5f2; border-color:var(--blue); }
+    #count { color:var(--muted); font-weight:700; white-space:nowrap; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; }
+    article { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:0 3px 12px #173c5110; }
+    .chapter { color:var(--blue); font-size:.85rem; font-weight:750; letter-spacing:.04em; }
+    h2 { margin:4px 0 10px; font-size:1.25rem; }
+    article p { margin:0; color:#38505e; white-space:pre-line; }
+    .resource { margin-top:38px; padding-top:26px; border-top:1px solid var(--line); }
+    .resource h2 { margin-bottom:4px; }
+    .resource p { color:var(--muted); margin:4px 0 14px; }
+    .resource img { display:block; width:100%; height:230px; object-fit:cover; border-radius:12px; background:#dbe5eb; }
+    .error { padding:18px; border-radius:8px; background:#fff2f0; color:#842b20; }
+    footer { max-width:1080px; margin:0 auto; padding:0 20px 32px; color:var(--muted); font-size:.86rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <p>행정안전부 · 디지털혁신과</p>
+    <h1>2026 디지털혁신 백서</h1>
+    <p class="intro">백서의 6개 장을 살펴보고 제목이나 본문 키워드로 원하는 내용을 찾아보세요.</p>
+  </header>
+  <main>
+    <section aria-label="백서 장 검색">
+      <div class="toolbar">
+        <label for="search">장 제목 또는 본문 검색</label>
+        <input id="search" type="search" placeholder="키워드 입력 (예: 사업, 예산, 일정)" autocomplete="off">
+        <output id="count" aria-live="polite">불러오는 중…</output>
+      </div>
+      <div id="chapters" class="grid" aria-live="polite"></div>
+    </section>
+    <section class="resource" aria-labelledby="resource-title">
+      <h2 id="resource-title">외부 리소스 · 디지털 공공서비스</h2>
+      <p>Unsplash의 원격 이미지 리소스입니다. 이미지 제공: Unsplash.</p>
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&amp;fit=crop&amp;w=1400&amp;q=80" alt="노트북을 사용하며 디지털 업무를 보는 사람들" loading="lazy">
+    </section>
+  </main>
+  <footer>자료: 2026 디지털혁신 백서 · 장별 데이터는 장데이터.json에서 불러옵니다.</footer>
+  <script>
+    const input = document.querySelector('#search');
+    const grid = document.querySelector('#chapters');
+    const count = document.querySelector('#count');
+    let chapters = [];
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const summary = text => String(text).replace(/\*\*(.*?)\*\*/g, '$1').replace(/^#{1,6}\s*/gm, '').replace(/\n+/g, ' ').trim();
+    function render() {
+      const query = input.value.trim().toLocaleLowerCase();
+      const filtered = chapters.filter(ch => `${ch['제목']} ${ch['본문']}`.toLocaleLowerCase().includes(query));
+      count.textContent = `결과 ${filtered.length}건`;
+      grid.innerHTML = filtered.length ? filtered.map(ch => `<article><div class="chapter">제${escapeHTML(ch['장'])}장</div><h2>${escapeHTML(ch['제목'])}</h2><p>${escapeHTML(summary(ch['본문']))}</p></article>`).join('') : '<p>검색 결과가 없습니다.</p>';
+    }
+    input.addEventListener('input', render);
+    fetch('./장데이터.json').then(response => {
+      if (!response.ok) throw new Error('장 데이터를 불러오지 못했습니다.');
+      return response.json();
+    }).then(data => { chapters = data; render(); }).catch(error => {
+      count.textContent = '데이터 오류';
+      grid.innerHTML = `<p class="error">${escapeHTML(error.message)} 페이지와 장데이터.json을 같은 경로에서 제공하는지 확인해 주세요.</p>`;
+    });
+  </script>
+</body>
+</html>
